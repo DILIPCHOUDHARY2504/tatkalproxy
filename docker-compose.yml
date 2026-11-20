@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # =====================================================================
+  # PostgreSQL Database Container
+  # =====================================================================
+  db:
+    image: postgres:15-alpine
+    container_name: tatkalproxy_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tatkal_proxy}
+      POSTGRES_USER: ${POSTGRES_USER:-tatkal_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tatkal_secure_password_2026}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tatkal_user} -d ${POSTGRES_DB:-tatkal_proxy}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # =====================================================================
+  # Tatkal Proxy Telegram Bot & Scheduler Service
+  # Runs the Telegram bot engine and the single APScheduler instance
+  # =====================================================================
+  bot:
+    build: .
+    container_name: tatkalproxy_bot
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-tatkal_user}:${POSTGRES_PASSWORD:-tatkal_secure_password_2026}@db:5432/${POSTGRES_DB:-tatkal_proxy}
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+      - ./assets:/app/assets
+    command: ["python", "bot.py"]
+
+  # =====================================================================
+  # FastAPI Webhook Server
+  # Receives signed payment gateway webhooks and Telegram callbacks
+  # =====================================================================
+  webhooks:
+    build: .
+    container_name: tatkalproxy_webhooks
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-tatkal_user}:${POSTGRES_PASSWORD:-tatkal_secure_password_2026}@db:5432/${POSTGRES_DB:-tatkal_proxy}
+    volumes:
+      - ./logs:/app/logs
+    ports:
+      - "127.0.0.1:8000:8000"
+    command: ["uvicorn", "webhooks.api:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
+
+volumes:
+  postgres_data:
+    driver: local

@@ -1,0 +1,40 @@
+# =====================================================================
+# TATKAL PROXY - SYSTEMD SERVICE UNIT FILE
+# Ubuntu VPS Production Service for Tatkal Proxy Bot & Scheduler
+# =====================================================================
+
+[Unit]
+Description=Tatkal Proxy Telegram Marketplace & Expiry Scheduler
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=tatkal
+Group=tatkal
+WorkingDirectory=/opt/tatkalproxy
+EnvironmentFile=/opt/tatkalproxy/.env
+
+# Execute bot using virtualenv python
+ExecStart=/opt/tatkalproxy/venv/bin/python bot.py
+
+# Auto restart on failure with 5s backoff
+Restart=always
+RestartSec=5
+
+# Hardening & Security
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+# Resource limits
+LimitNOFILE=65535
+
+# Logging to system journal
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tatkalproxy
+
+[Install]
+WantedBy=multi-user.target

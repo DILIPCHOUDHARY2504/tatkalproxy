@@ -1,0 +1,30 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment and secrets
+.env
+*.pem
+*.key
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Runtime logs and uploads
+logs/*.log
+uploads/*
+!uploads/.gitkeep
+!logs/.gitkeep
+
+# IDEs
+.idea/
+.vscode/
+*.swp
