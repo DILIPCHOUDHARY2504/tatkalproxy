@@ -201,3 +201,5 @@ cd /opt/tatkalproxy
 cp .env.example .env && nano .env
 docker compose up -d --build
 ```
+#   t a t k a l p r o x y  
+ 
